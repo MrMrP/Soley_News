@@ -1,121 +1,94 @@
+//Dependencies//
 var express = require("express");
 var bodyParser = require("body-parser");
-var logger = require("morgan");
-var mongoose = require("mongoose");
-
-// Our scraping tools
-// Axios is a promised-based http library, similar to jQuery's Ajax method
-// It works on the client and on the server
-var axios = require("axios");
+var exphbs = require("express-handlebars")
+var mongojs = require("mongojs");
+var request = require("request");
 var cheerio = require("cheerio");
 
-// Require all models
-var db = require("./models");
-
-var PORT = 3000;
-
-// Initialize Express
+//Intializing Express
 var app = express();
+var databaseUrl= "news";
+var collections = ["posts"]
 
-// Configure middleware
+//Hooking mongojs configuration to the db variable
+var db = mongojs(databaseUrl, collections);
+db.on("error", function(error){
+    console.log("Database Error:", error);
+})
 
-// Use morgan logger for logging requests
-app.use(logger("dev"));
-// Use body-parser for handling form submissions
-app.use(bodyParser.urlencoded({ extended: true }));
-// Use express.static to serve the public folder as a static directory
+// Middleware
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 app.use(express.static("public"));
 
-// Connect to the Mongo DB
-mongoose.connect("mongodb://127.0.0.1:27017/news");
-
-// Routes
-
-// A GET route for scraping the echoJS website
-app.get("/scrape", function(req, res) {
-  // First, we grab the body of the html with request
-  axios.get("https://sneakernews.com/").then(function(response) {
-    // Then, we load that into cheerio and save it to $ for a shorthand selector
-    var $ = cheerio.load(response.data);
-
-    // Now, we grab every h2 within an article tag, and do the following:
-    $("article h2").each(function(i, element) {
-      // Save an empty result object
-      var result = {};
-
-      // Add the text and href of every link, and save them as properties of the result object
-      result.title = $(this)
-        .children("a")
-        .text();
-      result.link = $(this)
-        .children("a")
-        .attr("href");
-
-      // Create a new Article using the `result` object built from scraping
-      db.Article.create(result)
-        .then(function(dbArticle) {
-          // View the added result in the console
-          console.log(dbArticle);
-        })
-        .catch(function(err) {
-          // If an error occurred, send it to the client
-          return res.json(err);
-        });
-    });
-
-    // If we were able to successfully scrape and save an Article, send a message to the client
-    res.send("Scrape Complete");
-  });
-});
-
-// Route for getting all Articles from the db
-app.get("/articles", function(req, res) {
-  // TODO: Finish the route so it grabs all of the articles
-  db.Article.find({})
-  .then(function(dbArticle){
-    res.json(dbArticle)
+// Handlebars
+app.engine(
+  "handlebars",
+  exphbs({
+    defaultLayout: "main"
   })
+);
+app.set("view engine", "handlebars");
+
+//Main route 
+
+app.get("/", function(req, res){
+    res.send("Welcome to Soley News");
 });
 
-// // Route for grabbing a specific Article by id, populate it with it's note
-// app.get("/articles/:id", function(req, res) {
-//   // TODO
-//   // ====
-//   // Finish the route so it finds one article using the req.params.id,
-//   // and run the populate method with "note",
-//   // then responds with the article with the note included
-//   db.Article.findOne({_id: req.params.id})
-//   .populate("notes")
-//   .then(function(articleData){
-//     res.json(articleData);
-//   })
-// });
-
-// // Route for saving/updating an Article's associated Note
-// app.post("/articles/:id", function(req, res) {
-//   // TODO
-//   // ====
-//   // save the new note that gets posted to the Notes collection
-//   // then find an article from the req.params.id
-//   // and update it's "note" property with the _id of the new note
-// // db.Note.update({_id: req.param.id})
-// // .then(function(dbArticle){
-// //   return db.Article.find({_id: req.params.id})
-// //   .update({_id: req.paramS.id})
-// // })
-// // .then(function(Article){
-// // res.json(Article);
-// // }),
-
-// db.Note.create(req.body)
-// .then(function(dbNote) {
-//   return db.Article.findOneAndUpdate({_id: req.params.id}, {note: dbNote}, {new: true});
-// })
-//   .then(function(dbArticle){
-//     res.json(dbArticle)
-// });
-// });
-// Start the server
-app.listen(PORT, function() {
-  console.log("App running on port " + PORT + "!");
-})
+// Retrieve data from the db
+app.get("/all", function(req, res) {
+    // Find all results from the posts collection in the db
+    db.posts.find({}, function(error, found) {
+      // Throw any errors to the console
+      if (error) {
+        console.log(error);
+      }
+      // If there are no errors, send the data to the browser as json
+      else {
+        res.json(found);
+      }
+    });
+  });
+  
+  // Scrape data from one site and place it into the mongodb db
+  app.get("/scrape", function(req, res) {
+    // Make a request for the data to be scraped
+    request("https://sneakernews.com/", function(error, response, html) {
+      // Load the html body from request into cheerio
+      var $ = cheerio.load(html);
+      // For each element with a "title" class
+      $("h4").each(function(i, element) {
+        // Save the text and href of each link enclosed in the current element
+        var title = $(element).children("a").text();
+        var link = $(element).children("a").attr("href");
+  
+        // If this found element had both a title and a link
+        if (title && link) {
+          // Insert the data in the db
+          db.posts.insert({
+            title: title,
+            link: link
+          },
+          function(err, inserted) {
+            if (err) {
+              // Log the error if one is encountered during the query
+              console.log(err);
+            }
+            else {
+              // Otherwise, log the inserted data
+              console.log(inserted);
+            }
+          });
+        }
+      });
+    });
+  
+    // Send a "Scrape Complete" message to the browser
+    res.send("Scrape Complete");
+});
+  // Listen on port 3000
+  app.listen(3000, function() {
+    console.log("App running on port 3000!");
+  });
