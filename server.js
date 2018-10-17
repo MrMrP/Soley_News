@@ -1,6 +1,7 @@
 var express = require("express");
 var mongoose = require("mongoose");
-
+var bodyParser = require("body-parser");
+var exphbs = require("express-handlebars");
 
 // Scraping Tools //
 var axios = require("axios");
@@ -8,27 +9,53 @@ var cheerio = require("cheerio");
 
 // Require all models //
 var db = require("./models");
-var PORT = 3000;
-
+var PORT = process.env.PORT || 3000;
 // Initializing Express //
 var app = express();
 
-// Parse requests body as JSON //
-app.use(express.urlencoded({ extend: true}));
-app.use(express.json());
-
-// Make public a static folder //
+// Middleware
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 app.use(express.static("public"));
+
+// Handlebars
+app.engine(
+  "handlebars",
+  exphbs({
+    defaultLayout: "main"
+  })
+);
+app.set("view engine", "handlebars");
+
+// Parse requests body as JSON //
+// app.use(express.urlencoded({ extended: true}));
+// app.use(express.json());
+// app.use(bodyParser, urlendcoded({
+//   extended: false
+// }))
+// Make public a static folder //
+// app.use(express.static("public"));
+
 
 //Connection to the Mongo DB //
 // Reminder to change once deployed via Heroku //
+
+// var databaseURL = "mongodb://127.0.0.1:27017/news";
+
+// if (process.env.MONGOB_URI) {
+//   mongoose.connect(process.env.MONGOB_URI)
+// } else {
+//   mongoose.connect(databaseURL)
+// }
+
+
 var MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/news";
 
 mongoose.Promise = Promise;
 mongoose.connect(MONGODB_URI);
 
-// mongoose.connect("mongodb://127.0.0.1:27017/news", { useNewURlParser: true
-// });
+mongoose.connect("mongodb://127.0.0.1:27017/news", { useNewURlParser: true
+});
 
 // Routing //
 // Scraping the sneakernews website //
@@ -104,6 +131,15 @@ app.post("/articles/:id", function(req, res){
 });
 
 // Start the server
+// var db = mongoose.connection;
+// db.on('error', function(err) {
+//   console.log("Mongoose Error: ", err)
+// });
+
+// db.once('open', function() {
+//   console.log("Mongoose connection successful")
+// });
+
 app.listen(PORT, function() {
   console.log("App running on port " + PORT + "!");
 })

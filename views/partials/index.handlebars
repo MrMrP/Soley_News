@@ -1,0 +1,48 @@
+  <!-- Carousel -->
+  <div class="carousel carousel-slider">
+    <div class="carousel-fixed-item center">
+      <div class="container white-text logoShadow">
+        <h2 class="LogoFont">SoulSelections</h2>
+        <p>A Social Marketplace For Fashion</p>
+      </div>
+      <a class="btn waves-effect white grey-text darken-text-2 modal-trigger z-depth-3" data-target="modal1">Login</a>
+      <br>
+      <br>
+      <a class="btn waves-effect white grey-text darken-text-2 z-depth-3" href="/browse/styles/all">Continue As Guest</a>
+    </div>
+    
+    <a class="carousel-item c1" href="#one!"></a>
+    <a class="carousel-item c2" href="#two!"></a>
+    <a class="carousel-item c3" href="#three!"></a>
+    <a class="carousel-item c4" href="#four!"></a>
+    <a class="carousel-item c5" href="#five!"></a>
+    <a class="carousel-item c6" href="#six!"></a>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal1" class="modal">
+    <div class="modal-content">
+      <div class="row">
+        <h4 class="center loginMain">Please, login into your account</h4>
+        <form id="signIn" name="signIn" class="col s12" action="/signin" method="POST">
+          <div class="row">
+            <div class="input-field col s12">
+              <input id="username" name="username" type="text" class="validate">
+              <label for="username">Username</label>
+            </div>
+          </div>
+          <div class="row">
+            <div class="input-field col s12">
+              <input id="password" name="password" type="password" class="validate">
+              <label for="password">Password</label>
+            </div>
+          </div>
+          <div class='row'>
+            <button type='submit' class='col s12 btn btn-large waves-effect blue lighten-3'>Login</button>
+          </div>
+        </form>
+        <a href="/new/account"><p class="center">create account</p></a>
+        
+      </div>
+    </div>
+  </div>
